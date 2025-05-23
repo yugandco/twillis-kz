@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="EcoTrack - трекинг посаженных деревьев в Казахстане">
+  <meta name="keywords" content="озеленение, посадка деревьев, Казахстан, экология">
+  <title>EcoTrack - Трекинг деревьев</title>
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Leaflet.js -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- GSAP -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <!-- Roboto Font (Material Design 3) -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    body { 
+      font-family: 'Roboto', sans-serif; 
+      color: #1A3C34; 
+      background-color: #E8F5E9; 
+    }
+    .container-md { 
+      max-width: 960px; 
+      margin: 0 auto; 
+    }
+    nav {
+      background-color: #2E7D32;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      border-radius: 0 0 16px 16px;
+    }
+    .navbar-brand, .nav-link { 
+      color: #FFFFFF !important; 
+      font-weight: 500; 
+    }
+    .nav-link:hover { 
+      color: #C8E6C9 !important; 
+    }
+    .lang-btn {
+      background-color: #E8F5E9;
+      color: #1A3C34;
+      font-size: 0.875rem;
+      padding: 8px 16px;
+      border-radius: 8px;
+      transition: background-color 0.3s ease-out;
+    }
+    .lang-btn.active {
+      background-color: #4CAF50;
+      color: #FFFFFF;
+    }
+    .hero-bg {
+      background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1448375240586-882707db888b');
+      background-size: cover;
+      background-position: center;
+      min-height: 80vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 0 0 16px 16px;
+    }
+    .hero-title {
+      font-size: 3rem;
+      font-weight: 700;
+      color: #FFFFFF;
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .hero-search, .map-search {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    .hero-search .form-control, .map-search .form-control {
+      background-color: #E8F5E9;
+      border: none;
+      border-bottom: 2px solid #4CAF50;
+      border-radius: 8px 8px 0 0;
+      padding: 16px;
+      font-size: 1.125rem;
+      transition: border-bottom-color 0.3s ease-out;
+    }
+    .hero-search .form-control:focus, .map-search .form-control:focus {
+      border-bottom-color: #2E7D32;
+      box-shadow: none;
+    }
+    .hero-search .btn-custom, .map-search .btn-custom {
+      background-color: #2E7D32;
+      color: #FFFFFF;
+      border-radius: 8px;
+      padding: 12px 24px;
+      font-size: 1.125rem;
+      font-weight: 500;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      transition: background-color 0.3s ease-out, transform 0.3s ease-out;
+    }
+    .hero-search .btn-custom:hover, .map-search .btn-custom:hover {
+      background-color: #4CAF50;
+      transform: translateY(-2px);
+    }
+    #mapid { 
+      height: 600px; 
+      width: 100%; 
+      border-radius: 12px; 
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+    }
+    #cityFilter {
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 1.125rem;
+      background-color: #E8F5E9;
+      border: 1px solid #A5D6A7;
+    }
+    .card-custom {
+      background-color: #E8F5E9;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      transition: transform 0.3s ease-out, box-shadow 0.3s ease-out;
+    }
+    .card-custom:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .stat-card {
+      position: relative;
+      padding: 2rem;
+      font-size: 1.25rem;
+      font-weight: 500;
+    }
+    .stat-card img {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 1rem;
+    }
+    .gallery-img {
+      object-fit: cover;
+      width: 100%;
+      height: 300px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      transition: transform 0.3s ease-out;
+    }
+    .gallery-img:hover {
+      transform: scale(1.05);
+    }
+    form input, form textarea {
+      background-color: #E8F5E9;
+      border: none;
+      border-bottom: 2px solid #4CAF50;
+      border-radius: 8px 8px 0 0;
+      padding: 16px;
+      font-size: 1.125rem;
+      transition: border-bottom-color 0.3s ease-out;
+    }
+    form input:focus, form textarea:focus {
+      border-bottom-color: #2E7D32;
+    }
+    form .btn-custom {
+      width: 100%;
+      background-color: #2E7D32;
+      color: #FFFFFF;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 1.125rem;
+      font-weight: 500;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    form .btn-custom:hover {
+      background-color: #4CAF50;
+      transform: translateY(-2px);
+    }
+    footer {
+      background-color: #2E7D32;
+      color: #FFFFFF;
+      border-radius: 16px 16px 0 0;
+      padding: 2rem 0;
+    }
+    footer a { 
+      color: #C8E6C9; 
+    }
+    footer a:hover { 
+      color: #FFFFFF; 
+    }
+    h2 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: #1A3C34;
+    }
+    .btn-custom {
+      background-color: #2E7D32;
+      color: #FFFFFF;
+      border-radius: 8px;
+      padding: 12px 24px;
+      font-weight: 500;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      transition: background-color 0.3s ease-out, transform 0.3s ease-out;
+    }
+    .btn-custom:hover {
+      background-color: #4CAF50;
+      transform: translateY(-2px);
+    }
+    .founder-img {
+      width: 150px;
+      height: 150px;
+      object-fit: cover;
+      border-radius: 50%;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <!-- 1. Меню (Top App Bar) -->
+  <nav class="navbar navbar-expand-md fixed-top">
+    <div class="container">
+      <a class="navbar-brand fw-bold" href="#">EcoTrack</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link lang" href="#home" data-key="home">Главная</a></li>
+          <li class="nav-item"><a class="nav-link lang" href="#map" data-key="map">Карта</a></li>
+          <li class="nav-item"><a class="nav-link lang" href="#stats" data-key="stats">Статистика</a></li>
+          <li class="nav-item"><a class="nav-link lang" href="#about" data-key="about">Онас</a></li>
+          <li class="nav-item"><a class="nav-link lang" href="#founders" data-key="founders">Основатели</a></li>
+          <li class="nav-item"><a class="nav-link lang" href="#gallery" data-key="gallery">Галерея</a></li>
+          <li class="nav-item"><a class="nav-link lang" href="#contact" data-key="contact">Контакты</a></li>
+        </ul>
+        <div class="d-flex ms-3">
+          <button id="lang-ru" class="lang-btn btn me-2 active">RU</button>
+          <button id="lang-kz" class="lang-btn btn me-2">KZ</button>
+          <button class="btn btn-custom lang" data-key="plant_tree">Посадить дерево</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 2. Герой-секция с поиском -->
+  <section id="home" class="hero-bg">
+    <div class="container-md text-center">
+      <h1 class="hero-title lang" id="hero-title" data-key="hero_title">Отслеживайте посаженные деревья</h1>
+      <div class="input-group hero-search" id="hero-search">
+        <input id="searchInput" type="text" class="form-control lang" placeholder="Введите ID дерева" data-key="search_placeholder">
+        <button id="searchButton" class="btn btn-custom lang" data-key="search">Найти</button>
+      </div>
+      <p id="searchResult" class="mt-4 text-white"></p>
+    </div>
+  </section>
+
+  <!-- 3. Карта (полная ширина) -->
+  <section id="map" class="py-5">
+    <div class="container-md text-center">
+      <h2 class="fw-bold mb-4 lang" id="map-title" data-key="map_title">Карта посадок</h2>
+      <div class="d-flex justify-content-center align-items-center mb-4 flex-wrap">
+        <select id="cityFilter" class="form-select me-3" style="max-width: 300px;">
+          <option value="all">Все города</option>
+          <option value="Астана">Астана</option>
+          <option value="Алматы">Алматы</option>
+          <option value="Шымкент">Шымкент</option>
+          <option value="Семей">Семей</option>
+        </select>
+        <p class="lang mb-0" data-key="tree_ids" style="font-size: 0.875rem; color: #1A3C34;">
+          Астана: 001–050, Алматы: 051–130, Шымкент: 131–170, Семей: 171–200
+        </p>
+      </div>
+      <div class="input-group map-search mb-4 mx-auto" id="map-search">
+        <input id="mapSearchInput" type="text" class="form-control lang" placeholder="Введите ID дерева" data-key="search_placeholder">
+        <button id="mapSearchButton" class="btn btn-custom lang" data-key="search">Найти</button>
+      </div>
+      <p id="mapSearchResult" class="mt-2"></p>
+    </div>
+    <div id="mapid"></div>
+  </section>
+
+  <!-- 4. Статистика (полная ширина) -->
+  <section id="stats" class="py-5">
+    <div class="text-center">
+      <h2 class="fw-bold mb-5 lang" id="stats-title" data-key="stats_title">Наша статистика</h2>
+      <div class="container-fluid">
+        <div class="row g-4 justify-content-center">
+          <div class="col-md-4 col-lg-3">
+            <div class="card card-custom stat-card text-center">
+              <img src="./assets/icons/tree.png" alt="Дерево">
+              <div class="lang" id="stat-1" data-key="stats_trees">Деревьев: 200</div>
+            </div>
+          </div>
+          <div class="col-md-4 col-lg-3">
+            <div class="card card-custom stat-card text-center">
+              <img src="./assets/icons/co2.png" alt="CO2">
+              <div class="lang" id="stat-2" data-key="stats_co2">CO2 поглощено: 500 тонн</div>
+            </div>
+          </div>
+          <div class="col-md-4 col-lg-3">
+            <div class="card card-custom stat-card text-center">
+              <img src="./assets/icons/land.png" alt="Площадь">
+              <div class="lang" id="stat-3" data-key="stats_area">Площадь: 10 га</div>
+            </div>
+          </div>
+        </div>
+        <canvas id="statsChart" class="mt-5 mx-auto" style="width: 70%; height: 200px"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. О нас -->
+  <section id="about" class="py-5">
+    <div class="container-md text-center">
+      <h2 class="fw-bold mb-4 lang" id="about-title" data-key="about_title">Наша миссия</h2>
+      <p class="mb-5 mx-auto lang" id="about-text" style="max-width: 700px;" data-key="about_text">
+        EcoTrack — это инициатива по озеленению Казахстана, запущенная в 2023 году. Мы стремимся посадить 1 миллион деревьев к 2030 году, чтобы бороться с изменением климата, улучшить экологию городов и вдохновить людей на заботу о природе. Наши проекты включают посадки в Астане, Алматы, Шымкенте и Семее, образовательные программы для школ и партнёрства с бизнесом для устойчивого развития. За два года мы посадили 200 деревьев, поглотив 500 тонн CO2 и озеленив 10 гектаров. Присоединяйтесь к нам, чтобы сделать Казахстан зеленее!
+      </p>
+      <div class="row g-4">
+        <div class="col-md-4">
+          <div class="card card-custom p-4 text-center">
+            <img src="./assets/icons/plant.png" alt="Посадка" style="width: 48px; height: 48px; margin-bottom: 1rem;">
+            <div class="lang" id="about-1" data-key="about_1">Массовые посадки деревьев в городах</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card card-custom p-4 text-center">
+            <img src="./assets/icons/classroom.png" alt="Образование" style="width: 48px; height: 48px; margin-bottom: 1rem;">
+            <div class="lang" id="about-2" data-key="about_2">Эко-образование для молодёжи</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card card-custom p-4 text-center">
+            <img src="./assets/icons/handshake.png" alt="Партнёрство" style="width: 48px; height: 48px; margin-bottom: 1rem;">
+            <div class="lang" id="about-3" data-key="about_3">Сотрудничество с бизнесом</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. Основатели -->
+  <section id="founders" class="py-5">
+    <div class="container-md text-center">
+      <h2 class="fw-bold mb-4 lang" id="founders-title" data-key="founders_title">Наши основатели</h2>
+      <div class="row g-4 justify-content-center">
+        <div class="col-md-6">
+          <div class="card card-custom p-4 text-center">
+            <img src="./assets/icons/almas.jpeg" class="founder-img mx-auto block" alt="Алмас">
+            <h3 class="fw-bold mb-2">Алмас Каримсаков</h3>
+            <p class="text-muted mb-3">Основатель, эколог</p>
+            <p class="lang" data-key="founder_almas">
+              Алмас — эколог с 10-летним опытом, страстно верящий в силу природы для преобразования городов. Он инициировал EcoTrack, чтобы объединить усилия граждан и бизнеса в озеленении Казахстана. Алмас руководит проектами посадок, выбирая виды деревьев, устойчивые к местному климату. Его цель — сделать каждый город Казахстана зелёным оазисом. В свободное время он проводит мастер-классы по экологии для школьников, вдохновляя новое поколение заботиться о планете.
+            </p>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card card-custom p-4 text-center">
+            <img src="./assets/icons/ernar.jpeg" class="founder-img mx-auto block" alt="Ернар">
+            <h3 class="fw-bold mb-2">Ернар Умбетали</h3>
+            <p class="text-muted mb-3">Сооснователь, IT-директор</p>
+            <p class="lang" data-key="founder_ernar">
+              Ернар — IT-специалист, разработавший платформу EcoTrack для отслеживания деревьев. Его страсть к технологиям и экологии помогает сделать проект доступным и прозрачным. Ернар внедрил интерактивную карту и систему поиска по ID, чтобы каждый мог следить за своим деревом. Он мечтает использовать данные для анализа экологического воздействия. Вне работы Ернар увлекается походами и фотографией природы.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. Галерея (полная ширина) -->
+  <section id="gallery" class="py-5">
+    <div class="text-center">
+      <h2 class="fw-bold mb-4 lang" id="gallery-title" data-key="gallery_title">Галерея посадок</h2>
+      <div class="container-fluid">
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+          <div class="col"><img src="https://plus.unsplash.com/premium_photo-1681140560926-ea741789469a?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8cGxhbnQlMjB0cmVlc3xlbnwwfHwwfHx8MA%3D%3D" class="gallery-img" id="gallery-img-1" alt="Люди сажают деревья"></div>
+          <div class="col"><img src="https://plus.unsplash.com/premium_photo-1681140560806-928e8b9a9a20?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8cGxhbnQlMjB0cmVlc3xlbnwwfHwwfHx8MA%3D%3D" class="gallery-img" id="gallery-img-2" alt="Посадка деревьев"></div>
+          <div class="col"><img src="https://plus.unsplash.com/premium_photo-1681140560898-bc854a3b8b1c?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MjF8fHBsYW50JTIwdHJlZXN8ZW58MHx8MHx8fDA%3D" class="gallery-img" id="gallery-img-3" alt="Эко-акция"></div>
+          <div class="col"><img src="https://plus.unsplash.com/premium_photo-1681140560805-2d81ba3118bd?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mjl8fHBsYW50JTIwdHJlZXN8ZW58MHx8MHx8fDA%3D" class="gallery-img" id="gallery-img-4" alt="Дети сажают деревья"></div>
+          <div class="col"><img src="https://plus.unsplash.com/premium_photo-1681140560749-965d4b4e54f3?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NDV8fHBsYW50JTIwdHJlZXN8ZW58MHx8MHx8fDA%3D" class="gallery-img" id="gallery-img-5" alt="Озеленение"></div>
+          <div class="col"><img src="https://plus.unsplash.com/premium_photo-1678655356141-457bfc2e0185?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Njl8fHBsYW50JTIwdHJlZXN8ZW58MHx8MHx8fDA%3D" class="gallery-img" id="gallery-img-6" alt="Групповая посадка"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. Контакты -->
+  <section id="contact" class="py-5">
+    <div class="container-md text-center">
+      <h2 class="fw-bold mb-4 lang" id="contact-title" data-key="contact_title">Свяжитесь с нами</h2>
+      <form class="mx-auto" style="max-width: 500px;">
+        <input type="text" class="form-control mb-3 lang" placeholder="Имя" data-key="contact_name">
+        <input type="email" class="form-control mb-3 lang" placeholder="Email" data-key="contact_email">
+        <textarea class="form-control mb-3 lang" placeholder="Сообщение" data-key="contact_message" rows="4"></textarea>
+        <button class="btn btn-custom lang" data-key="contact_submit">Отправить</button>
+      </form>
+      <p class="mt-4 lang" data-key="contact_info">Email: info@ecotrack.kz | Тел: +7 (777) 123-45-67</p>
+    </div>
+  </section>
+
+  <!-- 9. Футер -->
+  <footer>
+    <div class="container-md text-center">
+      <p class="lang" data-key="footer_copyright">© 2025 EcoTrack. Все права защищены.</p>
+      <ul class="list-inline mt-2">
+        <li class="list-inline-item"><a href="#home" class="lang" data-key="home">Главная</a></li>
+        <li class="list-inline-item"><a href="#map" class="lang" data-key="map">Карта</a></li>
+        <li class="list-inline-item"><a href="#contact" class="lang" data-key="contact">Контакты</a></li>
+      </ul>
+    </div>
+  </footer>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- JavaScript -->
+  <script>
+    // Проверка загрузки ресурсов
+    window.addEventListener('load', () => {
+      console.log('Ресурсы загружены');
+      if (!window.L) console.error('Leaflet не загружен');
+      if (!window.Chart) console.error('Chart.js не загружен');
+      if (!window.gsap) console.error('GSAP не загружен');
+      if (!window.bootstrap) console.error('Bootstrap не загружен');
+    });
+
+    // Локализация
+    const translations = {
+      ru: {
+        home: "Главная",
+        map: "Карта",
+        stats: "Статистика",
+        about: "О нас",
+        founders: "Основатели",
+        gallery: "Галерея",
+        contact: "Контакты",
+        plant_tree: "Посадить дерево",
+        hero_title: "Отслеживайте посаженные деревья",
+        search_placeholder: "Введите ID дерева",
+        search: "Найти",
+        map_title: "Карта посадок",
+        tree_ids: "Астана: 001–050, Алматы: 051–130, Шымкент: 131–170, Семей: 171–200",
+        stats_title: "Наша статистика",
+        stats_trees: "Деревьев: 200",
+        stats_co2: "CO2 поглощено: 500 тонн",
+        stats_area: "Площадь: 10 га",
+        about_title: "Наша миссия",
+        about_text: "EcoTrack — это инициатива по озеленению Казахстана, запущенная в 2023 году. Мы стремимся посадить 1 миллион деревьев к 2030 году, чтобы бороться с изменением климата, улучшить экологию городов и вдохновить людей на заботу о природе. Наши проекты включают посадки в Астане, Алматы, Шымкенте и Семее, образовательные программы для школ и партнёрства с бизнесом для устойчивого развития. За два года мы посадили 200 деревьев, поглотив 500 тонн CO2 и озеленив 10 гектаров. Присоединяйтесь к нам, чтобы сделать Казахстан зеленее!",
+        about_1: "Массовые посадки деревьев в городах",
+        about_2: "Эко-образование для молодёжи",
+        about_3: "Сотрудничество с бизнесом",
+        founders_title: "Наши основатели",
+        founder_almas: "Алмас — эколог с 10-летним опытом, страстно верящий в силу природы для преобразования городов. Он инициировал EcoTrack, чтобы объединить усилия граждан и бизнеса в озеленении Казахстана. Алмас руководит проектами посадок, выбирая виды деревьев, устойчивые к местному климату. Его цель — сделать каждый город Казахстана зелёным оазисом. В свободное время он проводит мастер-классы по экологии для школьников, вдохновляя новое поколение заботиться о планете.",
+        founder_ernar: "Ернар — IT-специалист, разработавший платформу EcoTrack для отслеживания деревьев. Его страсть к технологиям и экологии помогает сделать проект доступным и прозрачным. Ернар внедрил интерактивную карту и систему поиска по ID, чтобы каждый мог следить за своим деревом. Он мечтает использовать данные для анализа экологического воздействия. Вне работы Ернар увлекается походами и фотографией природы.",
+        gallery_title: "Галерея посадок",
+        contact_title: "Свяжитесь с нами",
+        contact_name: "Имя",
+        contact_email: "Email",
+        contact_message: "Сообщение",
+        contact_submit: "Отправить",
+        contact_info: "Email: info@ecotrack.kz | Тел: +7 (777) 123-45-67",
+        footer_copyright: "© 2025 EcoTrack. Все права защищены.",
+        tree_type: "Тип",
+        city: "Город",
+        planted_date: "Дата посадки",
+        tree_found: "Дерево найдено",
+        tree_not_found: "Дерево не найдено",
+        in: "в",
+        all_cities: "Все города"
+      },
+      kz: {
+        home: "Басты",
+        map: "Карта",
+        stats: "Статистика",
+        about: "Біз туралы",
+        founders: "Негізін қалаушылар",
+        gallery: "Галерея",
+        contact: "Байланыс",
+        plant_tree: "Ағаш отырғызу",
+        hero_title: "Отырғызылған ағаштарды бақылаңыз",
+        search_placeholder: "Ағаштың ID енгізіңіз",
+        search: "Табу",
+        map_title: "Отырғызу картасы",
+        tree_ids: "Астана: 001–050, Алматы: 051–130, Шымкент: 131–170, Семей: 171–200",
+        stats_title: "Біздің статистика",
+        stats_trees: "Ағаштар: 200",
+        stats_co2: "CO2 сіңірілді: 500 тонна",
+        stats_area: "Аумағы: 10 га",
+        about_title: "Біздің миссия",
+        about_text: "EcoTrack — 2023 жылы басталған Қазақстанды көгалдандыру бастамасы. Біз 2030 жылға дейін 1 миллион ағаш отырғызып, климаттың өзгеруімен күресуге, қалалардың экологиясын жақсартуға және адамдарды табиғатқа қамқорлық жасауға шабыттандыруға ұмтыламыз. Біздің жобалар Астана, Алматы, Шымкент және Семейдегі отырғызуларды, мектептерге арналған білім беру бағдарламаларын және тұрақты даму үшін бизнеспен серіктестікті қамтиды. Екі жылда біз 200 ағаш отырғызып, 500 тонна CO2 сіңірдік және 10 гектарды көгалдандырдық. Бізге қосылыңыз, Қазақстанды жасыл етейік!",
+        about_1: "Қалаларда жаппай ағаш отырғызу",
+        about_2: "Жастарға эко-білім беру",
+        about_3: "Бизнеспен ынтымақтастық",
+        founders_title: "Біздің негізін қалаушылар",
+        founder_almas: "Алмас — 10 жылдық тәжірибесі бар эколог, табиғаттың қалаларды өзгерту күшіне сенеді. Ол EcoTrack-ті Қазақстанды көгалдандыруда азаматтар мен бизнестің күш-жігерін біріктіру үшін бастады. Алмас отырғызу жобаларын басқарады, жергілікті климатқа төзімді ағаш түрлерін таңдайды. Оның мақсаты — Қазақстанның әр қаласын жасыл оазиске айналдыру. Бос уақытында ол мектеп оқушыларына экология бойынша шеберлік сабақтарын өткізіп, жаңа ұрпақты планетаға қамқорлық жасауға шабыттандырады.",
+        founder_ernar: "Ернар — EcoTrack платформасын ағаштарды бақылау үшін әзірлеген IT маманы. Оның технологиялар мен экологияға деген құштарлығы жобаны қолжетімді және ашық етеді. Ернар интерактивті картаны және ID бойынша іздеу жүйесін енгізді, осылайша әркім өз ағашын бақылай алады. Ол деректерді экологиялық әсерді талдау үшін пайдалануды армандайды. Жұмыстан тыс уақытта Ернар жаяу серуендеуді және табиғатты суретке түсіруді ұнатады.",
+        gallery_title: "Отырғызу галереясы",
+        contact_title: "Бізбен байланысыңыз",
+        contact_name: "Аты",
+        contact_email: "Email",
+        contact_message: "Хабарлама",
+        contact_submit: "Жіберу",
+        contact_info: "Email: info@ecotrack.kz | Тел: +7 (777) 123-45-67",
+        footer_copyright: "© 2025 EcoTrack. Барлық құқықтар қорғалған.",
+        tree_type: "Түрі",
+        city: "Қала",
+        planted_date: "Отырғызу күні",
+        tree_found: "Ағаш табылды",
+        tree_not_found: "Ағаш табылмады",
+        in: "қаласында",
+        all_cities: "Барлық қалалар"
+      }
+    };
+
+    let currentLang = 'ru';
+    let map = null;
+    let markers = [];
+    let pineIcon, oakIcon, appleIcon, birchIcon;
+    let chart = null;
+
+    // Поиск дерева
+    function searchTree(inputId, resultId) {
+      console.log('searchTree вызвана для input:', inputId);
+      const id = document.getElementById(inputId).value;
+      const result = document.getElementById(resultId);
+      const tree = trees.find(t => t.id === id);
+      if (tree) {
+        result.innerHTML = `${translations[currentLang].tree_found}: ${tree.type} ${translations[currentLang].in} ${tree.city}`;
+        if (map) {
+          document.getElementById('map').scrollIntoView({ behavior: 'smooth' });
+          map.setView([tree.lat, tree.lng], 16);
+          const marker = markers.find(m => {
+            const popupContent = m.getPopup()?.getContent();
+            return popupContent && popupContent.includes(`ID: ${id}`);
+          });
+          if (marker) {
+            marker.openPopup();
+          } else {
+            console.warn('Маркер для ID', id, 'не найден');
+          }
+        }
+      } else {
+        result.innerHTML = translations[currentLang].tree_not_found;
+      }
+    }
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      document.querySelectorAll('.lang').forEach(el => {
+        el.textContent = translations[lang][el.dataset.key];
+        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+          el.placeholder = translations[lang][el.dataset.key];
+        }
+      });
+      document.querySelector('#cityFilter').innerHTML = `
+        <option value="all">${translations[lang].all_cities}</option>
+        <option value="Астана">Астана</option>
+        <option value="Алматы">Алматы</option>
+        <option value="Шымкент">Шымкент</option>
+        <option value="Семей">Семей</option>
+      `;
+      document.querySelector('#lang-ru').classList.toggle('active', lang === 'ru');
+      document.querySelector('#lang-kz').classList.toggle('active', lang === 'kz');
+      if (map && typeof updateMap === 'function') {
+        updateMap(document.getElementById('cityFilter').value);
+      }
+      if (chart) {
+        chart.data.datasets[0].label = translations[lang].stats_trees;
+        chart.update();
+      }
+    }
+
+    document.getElementById('lang-ru').addEventListener('click', () => setLanguage('ru'));
+    document.getElementById('lang-kz').addEventListener('click', () => setLanguage('kz'));
+
+    // Генерация 200 деревьев
+    const trees = [];
+    const cities = [
+      { name: "Астана", lat: 51.1694, lng: 71.4491, count: 50 },
+      { name: "Алматы", lat: 43.2389, lng: 76.8897, count: 80 },
+      { name: "Шымкент", lat: 42.9000, lng: 71.3667, count: 40 },
+      { name: "Семей", lat: 50.2797, lng: 80.2297, count: 30 }
+    ];
+    const types = ["pine", "oak", "apple", "birch"];
+    let id = 1;
+    cities.forEach(city => {
+      for (let i = 0; i < city.count; i++) {
+        const randomLat = city.lat + (Math.random() - 0.5) * 0.02;
+        const randomLng = city.lng + (Math.random() - 0.5) * 0.02;
+        const randomType = types[Math.floor(Math.random() * types.length)];
+        const date = `2024-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`;
+        trees.push({
+          id: String(id).padStart(3, '0'),
+          type: randomType,
+          lat: randomLat,
+          lng: randomLng,
+          city: city.name,
+          planted_date: date
+        });
+        id++;
+      }
+    });
+
+    // Определение updateMap
+    function updateMap(cityFilter = 'all') {
+      if (!map) {
+        console.warn('Карта не инициализирована, пропуск updateMap');
+        return;
+      }
+      console.log('Обновление карты с фильтром:', cityFilter);
+      if (markers && markers.length) {
+        markers.forEach(marker => {
+          try {
+            map.removeLayer(marker);
+          } catch (e) {
+            console.error('Ошибка удаления маркера:', e);
+          }
+        });
+      }
+      markers = [];
+      const filteredTrees = cityFilter === 'all' ? trees : trees.filter(tree => tree.city === cityFilter);
+      filteredTrees.forEach(tree => {
+        const icon = tree.type === 'pine' ? pineIcon :
+                     tree.type === 'oak' ? oakIcon :
+                     tree.type === 'apple' ? appleIcon : birchIcon;
+        try {
+          const marker = L.marker([tree.lat, tree.lng], { icon })
+            .addTo(map)
+            .bindPopup(`ID: ${tree.id}<br>${translations[currentLang].tree_type}: ${tree.type}<br>${translations[currentLang].city}: ${tree.city}<br>${translations[currentLang].planted_date}: ${tree.planted_date}`);
+          markers.push(marker);
+        } catch (e) {
+          console.error('Ошибка добавления маркера:', e);
+        }
+      });
+      console.log('Добавлено маркеров:', markers.length);
+    }
+
+    // Инициализация карты
+    if (typeof L === 'undefined') {
+      console.error('Leaflet не загружен. Проверьте подключение https://unpkg.com/leaflet@1.9.4/dist/leaflet.js');
+    } else {
+      map = L.map('mapid').setView([48.0196, 66.9237], 5);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+      }).addTo(map);
+
+      // Кастомные иконки
+      try {
+        pineIcon = L.icon({ iconUrl: 'assets/icons/pine.png', iconSize: [32, 32] });
+        oakIcon = L.icon({ iconUrl: 'assets/icons/oak.png', iconSize: [32, 32] });
+        appleIcon = L.icon({ iconUrl: 'assets/icons/apple.png', iconSize: [32, 32] });
+        birchIcon = L.icon({ iconUrl: 'assets/icons/birch.png', iconSize: [32, 32] });
+      } catch (e) {
+        console.error('Ошибка загрузки иконок, используются дефолтные маркеры:', e);
+        pineIcon = oakIcon = appleIcon = birchIcon = L.icon({
+          iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+          iconSize: [25, 41]
+        });
+      }
+
+      // Слушатель для фильтра
+      document.getElementById('cityFilter').addEventListener('change', (e) => {
+        console.log('Фильтр изменен:', e.target.value);
+        updateMap(e.target.value);
+      });
+
+      // Инициализация карты
+      try {
+        updateMap();
+      } catch (e) {
+        console.error('Ошибка инициализации карты:', e);
+      }
+    }
+
+    // Инициализация графика
+    if (typeof Chart !== 'undefined') {
+      const ctx = document.getElementById('statsChart').getContext('2d');
+      chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Астана', 'Алматы', 'Шымкент', 'Семей'],
+          datasets: [{
+            label: translations[currentLang].stats_trees,
+            data: [50, 80, 40, 30],
+            backgroundColor: 'rgba(46, 125, 50, 0.5)',
+            borderColor: 'rgba(46, 125, 50, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          scales: { y: { beginAtZero: true } },
+          animation: { duration: 1000, easing: 'easeOutQuart' }
+        }
+      });
+    } else {
+      console.error('Chart.js не загружен');
+    }
+
+    // Добавление обработчиков для кнопок поиска
+    document.getElementById('searchButton').addEventListener('click', () => {
+      console.log('Кнопка поиска (герой-секция) нажата');
+      searchTree('searchInput', 'searchResult');
+    });
+    document.getElementById('mapSearchButton').addEventListener('click', () => {
+      console.log('Кнопка поиска (карта) нажата');
+      searchTree('mapSearchInput', 'mapSearchResult');
+    });
+
+    // Вызов setLanguage после инициализации
+    setLanguage('ru');
+
+    // GSAP анимации (в стиле MD3)
+    if (typeof gsap !== 'undefined') {
+      gsap.set("#hero-title, #hero-search, #map-title, #cityFilter, #map-search, #stats-title, #stat-1, #stat-2, #stat-3, #stats-chart, #about-title, #about-text, #about-1, #about-2, #about-3, #founders-title, #founders .card, #gallery-title, .gallery-img, #contact-title, #contact form input, #contact form textarea, #contact form button, #contact p", { opacity: 0, scale: 0.95 });
+      gsap.to("#hero-title", { duration: 0.6, opacity: 1, scale: 1, ease: "power2.out" });
+      gsap.to("#hero-search", { duration: 0.6, opacity: 1, scale: 1, ease: "power2.out", delay: 0.2 });
+      gsap.to("#map-title", { duration: 0.6, opacity: 1, scale: 1, ease: "power2.out", scrollTrigger: { trigger: "#map", start: "top 80%" } });
+      gsap.to("#cityFilter", { duration: 0.6, opacity: 1, scale: 1, ease: "power2.out", scrollTrigger: { trigger: "#map", start: "top 80%", delay: 0.2 } });
+      gsap.to("#map-search", { duration: 0.6, opacity: 1, scale: 1, ease: "power2.out", scrollTrigger: { trigger: "#map", start: "top 80%", delay: 0.3 } });
+      gsap.to("#stats-title", { duration: 0.6, opacity: 1, scale: 1, ease: "power2.out", scrollTrigger: { trigger: "#stats", start: "top 80%" } });
+      gsap.to("#stat-1", { duration: 0.6, opacity: 1, scale: 1, ease: "power2.out", scrollTrigger: { trigger: "#stats", start: "top 80%" } });
+      gsap.to("#stat-2", { duration: 0.6, opacity: 1, scale: 1, ease: "power2.out", scrollTrigger: { trigger: "#stats", start: "top 80%", delay: 0.1 } });
+      gsap.to("#stat-3", { duration: 0.6, opacity: 1, scale: 1, ease: "power2.out", scrollTrigger: { trigger: "#stats", start: "top 80%", delay: 0.2 } });
+      gsap.to("#stats-chart", { duration: 0.6, opacity: 1, scale: 1, ease: "power2.out", scrollTrigger: { trigger: "#stats", start: "top 80%", delay: 0.3 } });
+      gsap.to("#about-title", { duration: 0.6, opacity: 1, scale: 1, ease: "power2.out", scrollTrigger: { trigger: "#about", start: "top 80%" } });
+      gsap.to("#about-text", { duration: 0.6, opacity: 1, scale: 1, ease: "power2.out", scrollTrigger: { trigger: "#about", start: "top 80%", delay: 0.2 } });
+      gsap.to("#about-1", { duration: 0.6, opacity: 1, scale: 1, ease: "power2.out", scrollTrigger: { trigger: "#about", start: "top 80%" } });
+      gsap.to("#about-2", { duration: 0.6, opacity: 1, scale: 1, ease: "power2.out", scrollTrigger: { trigger: "#about", start: "top 80%", delay: 0.1 } });
+      gsap.to("#about-3", { duration: 0.6, opacity: 1, scale: 1, ease: "power2.out", scrollTrigger: { trigger: "#about", start: "top 80%", delay: 0.2 } });
+      gsap.to("#founders-title", { duration: 0.6, opacity: 1, scale: 1, ease: "power2.out", scrollTrigger: { trigger: "#founders", start: "top 80%" } });
+      gsap.to("#founders .card", { duration: 0.6, opacity: 1, scale: 1, ease: "power2.out", stagger: 0.1, scrollTrigger: { trigger: "#founders", start: "top 80%", delay: 0.2 } });
+      gsap.to("#gallery-title", { duration: 0.6, opacity: 1, scale: 1, ease: "power2.out", scrollTrigger: { trigger: "#gallery", start: "top 80%" } });
+      gsap.to(".gallery-img", { duration: 0.6, opacity: 1, scale: 1, ease: "power2.out", stagger: 0.1, scrollTrigger: { trigger: "#gallery", start: "top 80%" } });
+      gsap.to("#contact-title", { duration: 0.6, opacity: 1, scale: 1, ease: "power2.out", scrollTrigger: { trigger: "#contact", start: "top 80%" } });
+      gsap.to("#contact form input, #contact form textarea, #contact form button", { duration: 0.6, opacity: 1, scale: 1, ease: "power2.out", stagger: 0.1, scrollTrigger: { trigger: "#contact", start: "top 80%", delay: 0.2 } });
+      gsap.to("#contact p", { duration: 0.6, opacity: 1, scale: 1, ease: "power2.out", scrollTrigger: { trigger: "#contact", start: "top 80%", delay: 0.3 } });
+    } else {
+      console.error('GSAP не загружен');
+    }
+  </script>
+</body>
+</html>
